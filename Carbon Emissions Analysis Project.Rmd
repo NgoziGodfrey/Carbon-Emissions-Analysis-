@@ -1,0 +1,179 @@
+---
+Title: "Carbon Emissions Analysis Project"
+Author: "Ngozi Godfrey"
+Date: "2024-11-21"
+Output: html_document
+---
+```{r Loading packages}
+library(tidyverse) 
+library(readxl) # For reading Excel files
+library(dplyr)    # For data manipulation
+library(ggplot2)  # For visualization
+library(tidyr)    # For reshaping
+```
+
+```{r Import Data}
+getwd()
+knitr::opts_chunk$set(root.dir="C:/Users/personal/Downloads/CO2 Emissions Project/CO2 Emissions Project")
+Emissions_data <- read_excel("C:/Users/personal/Downloads/CO2 Emissions Project/CO2 Emissions Project/OWID-CB.xlsx")
+Emissions_data
+```
+
+```{r Clean Data}
+long_data <- Emissions_data %>%
+  pivot_longer(cols = matches("^[0-9]{4}$"), names_to = "Year", values_to = "Value") %>%
+  mutate(Year = as.numeric(Year)) %>%
+  filter(Year >= 1985 & Year <= 2022)
+# Filtering Data
+Filtered_Data <- long_data %>%
+  filter(Year >= 1985 & Year <= 2024)
+# Check for missing values
+Filtered_Data <- Filtered_Data %>%
+  filter(!is.na(Value))
+# Check for duplicates
+duplicates <- Filtered_Data %>% 
+  duplicated() %>%
+  sum()
+# Remove duplicates
+Filtered_Data <- Filtered_Data %>% distinct()
+# Most Recent Year
+most_recent_year <- max(Filtered_Data $Year, na.rm = TRUE)
+```
+
+## CO₂ Emissions Analysis Project
+
+### Objective
+Analyze global CO₂ emissions data from 1985 to 2022 to uncover trends, identify top emitters, identify trends of some countries and provide actionable insights.
+
+### Tools Used
+- Programming: R 
+- Packages: tidyverse(dplyr, ggplot2, readxl, tidyr, knitr)
+- Data Source: https://github.com/owid/co2-data
+- Visualization: Line plots, bar charts
+
+---
+
+## Key Insights
+
+### 1. Top 10 Emitters
+- From the graph,China and the United States leads significantly due to their large-scale industrial activities and energy demands. Smaller nations like Qatar and Kuwait also rank high, driven by their dependence on fossil fuel production and exports. The disparities emphasize the need for tailored climate policies, with major emitters focusing on renewable energy adoption and smaller nations diversifying their economies.
+
+```{r Top_Emitters, echo=TRUE}
+# Code to analyse Top 10 CO₂ Emitters
+Top_Emitters <- Filtered_Data %>%
+  filter(Year == most_recent_year) %>%  arrange(desc(`Value`)) %>% slice(1:20)
+# Code to plot Top 10 CO₂ Emitters trend
+ggplot(Top_Emitters, aes(x = reorder(`Economy Name`, -`Value`), y = `Value`, fill = `Economy Name`)) +
+  geom_bar(stat = "identity") + coord_flip() + labs(title = "Top 10 CO2 Emitters( Most Recent Year) ",
+ x = "Country", y = "CO₂ Emissions")+ theme_minimal()
+# Save Image
+ggsave("C:/Users/personal/Downloads/CO2 Emissions Project/CO2 Emissions Project/Visualizations/Top_Emitters.png", width = 10, height = 6)
+```
+
+### 2. Global Trends
+- This graph shows a steady rise in emissions, reflecting increasing industrialization, urbanization, and energy demands worldwide. However, a notable dip around 2020 stands out, likely caused by the COVID-19 pandemic, which led to reduced industrial activity, travel, and energy consumption globally. Despite this temporary decline, the overall trend highlights the urgent need for sustained global efforts to transition to renewable energy and implement policies to mitigate the environmental impacts of industrial growth.
+
+```{r Global_Emissions_Trend, echo=TRUE}
+# Code to analyse Global CO₂ Emissions
+Global_trend <- Filtered_Data %>%
+  group_by(Year) %>%
+  summarize(Total_Emissions = sum(`Value`, na.rm = TRUE))
+# Code to plot Global CO₂ Emissions trend
+ggplot(Global_trend, aes(x = Year, y = Total_Emissions)) +
+  geom_line(color = "blue", linewidth = 1) +
+  labs(title = "Global CO2 Emissions Trend (1985–2022)", x = "Year", y = "Total Emissions") + theme_minimal()
+# Save Image
+ggsave("C:/Users/personal/Downloads/CO2 Emissions Project/CO2 Emissions Project/Visualizations/Global_Emissions_trend.png", width = 10, height = 6)
+```
+
+### 3. Top 10 Regions with Highest Per Capita Carbon Emissions
+- The analysis reveals that Qatar leads in per capita CO₂ emissions due to its small population and energy-intensive fossil fuel production, while larger countries like the United States, China, and Russia dominate in total emissions. This distinction highlights the need for smaller nations with high per capita emissions to adopt sustainable energy practices and diversify their economies. Larger emitters, on the other hand, bear responsibility for reducing their global impact through systemic changes in energy, industry, and transportation. Both categories emphasize the need for tailored climate policies and global collaboration to address their unique contributions to climate change.
+
+```{r Region_Emissions, echo=TRUE}
+# Code to analyse Regions with highest/capita CO₂ Emissions
+Regional_Emissions <- Filtered_Data %>%
+  group_by(`Economy Name`) %>%
+  summarize(avg_emissions = mean(`Value`, na.rm = TRUE)) %>%
+  arrange(desc(avg_emissions)) %>%
+  slice(1:10)
+# Code to plot Regions with highest/capita CO₂ Emissions trend
+ggplot(Regional_Emissions, aes(x = reorder(`Economy Name`, -avg_emissions), y = avg_emissions, fill = `Economy Name`)) +
+geom_bar(stat = "identity") +
+coord_flip() + labs (title = "Regions with the Highest Per Capita CO2 Emissions (1985-2022)",
+x = "Region", y = "Average CO2 Emissions") + theme_minimal()
+# Save Image
+ggsave("C:/Users/personal/Downloads/CO2 Emissions Project/CO2 Emissions Project/Visualizations/Regional_Emissions_trend.png", width = 10, height = 6)
+```
+
+### 4. Nigeria's Emission Trend
+- From the analysis, Nigeria's CO₂ emissions have steadily increased from 1985 to 2022, driven by population growth, industrialization, and rising energy demands. A notable dip around 2010 may be linked to disruptions in industrial activity, shifts in energy production, or global oil demand fluctuations, reflecting Nigeria's oil-dependent economy. This trend highlights the importance of adopting cleaner energy sources and sustainable development practices to manage emissions while supporting economic growth. 
+
+```{r Nigeria_Trend, echo=TRUE}
+# Code to analyse Nigeria's CO₂ Emissions
+Nigeria_Trend <- Filtered_Data %>%
+  filter(`Economy Name` == "Nigeria")
+# Code to plot Nigeria's CO₂ Emissions trend
+ggplot(Nigeria_Trend, aes(x = Year, y =`Value`)) +
+geom_line(color = "green", linewidth = 1) +
+labs(title = "Nigeria's CO2 Emissions Trend (1985-2022)",
+x = "Year", y = "CO2 Emissions") + theme_minimal()
+# Save Image
+ggsave("C:/Users/personal/Downloads/CO2 Emissions Project/CO2 Emissions Project/Visualizations/Nigeria_Emissions_trend.png", width = 10, height = 6)
+```
+
+### 5. United States' Emission Trend
+- The graph highlights the United States' CO₂ emissions trend from 1985 to 2022, showing a general decline since the mid-2000s after decades of steady emissions. This reduction reflects the shift from coal to natural gas, increased adoption of renewable energy, and improvements in energy efficiency. Despite this progress, the United States remains one of the world's largest emitters, emphasizing the need for continued investment in clean energy technologies and stronger climate policies.
+
+```{r US_Trend, echo=TRUE}
+# Code to analyse United States' CO₂ Emissions
+US_Trend <- Filtered_Data %>%
+  filter(`Economy Name` == "United States")
+# Code to plot United States' CO₂ Emissions trend
+ggplot(US_Trend, aes(x = Year, y = `Value`)) +
+geom_line(color = "red", linewidth = 1) +
+labs(title = "United State's CO2 Emissions Trend (1985-2022)",
+x = "Year", y = "CO2 Emissions") + theme_minimal()
+# Save Image
+ggsave("C:/Users/personal/Downloads/CO2 Emissions Project/CO2 Emissions Project/Visualizations/US_Emissions_trend.png", width = 10, height = 6)
+```
+
+### 6. United Kingdom's Emission Trend
+- The graph showcases the United Kingdom's CO₂ emissions trend from 1985 to 2022, which reveals a steady decline in emissions over the years. This reduction reflects the UK's significant efforts in transitioning from coal to cleaner energy sources such as natural gas, renewables, and nuclear power, as well as implementing stricter environmental regulations. The trend positions the UK as a leader in climate action among developed nations, demonstrating the effectiveness of long-term policy and investment in sustainability.
+
+```{r UK_Trend, echo=TRUE}
+# Code to analyse United Kingdom's CO₂ Emissions
+UK_Trend <- Filtered_Data %>%
+  filter(`Economy Name` == "United Kingdom")
+# Code to plot United Kingdom's CO₂ Emissions trend
+ggplot(UK_Trend, aes(x = Year, y = `Value`)) +
+geom_line(color = "orange", linewidth = 1) +
+labs(title = "United Kingdom's CO2 Emissions Trend (1985-2022)",
+x = "Year", y = "CO2 Emissions") + theme_minimal()
+# Save Image
+ggsave("C:/Users/personal/Downloads/CO2 Emissions Project/CO2 Emissions Project/Visualizations/UK_Emissions_trend.png", width = 10, height = 6)
+```
+
+### 7. China's Emission Trend
+- The graph highlights China's CO₂ emissions trend from 1985 to 2022, showcasing a steady and significant rise in emissions, especially after 2000. This sharp increase reflects China's rapid industrialization, urbanization, and reliance on coal as a primary energy source. The trend underscores the critical role China plays in global emissions and the need for targeted efforts to transition to renewable energy and sustainable industrial practices.
+
+```{r CH_Trend, echo=TRUE}
+# Code to analyse China's CO₂ Emissions
+CH_Trend <- Filtered_Data %>%
+  filter(`Economy Name` == "China")
+# Code to plot China's CO₂ Emissions trend
+ggplot(CH_Trend, aes(x = Year, y =`Value`)) +
+geom_line(color = "purple", linewidth = 1) +
+labs(title = "China's CO2 Emissions Trend (1985-2022)",
+x = "Year", y = "CO2 Emissions") + theme_minimal()
+# Save Image
+ggsave("C:/Users/personal/Downloads/CO2 Emissions Project/CO2 Emissions Project/Visualizations/China_Emissions_trend.png", width = 10, height = 6)
+```
+
+### Recommendations
+- Transition to renewable energy sources.
+- Implement stricter regulations for top emitters.
+- Promote global collaboration to achieve climate goals.
+
+
+
+
